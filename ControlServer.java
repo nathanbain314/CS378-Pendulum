@@ -154,7 +154,15 @@ class PoleServer_handler implements Runnable {
     // pendulum needs sensing data from other pendulums.
     double calculate_action(double angle, double angleDot, double pos, double posDot, double loc) {
       double action = 0;
-      action = 10 / (80 * 0.01745) * angle + angleDot + posDot + (pos-loc)/2;
+
+      double trackLimit = 4.8;
+
+      double move = (pos - loc) > 0 ?
+          // min / max add slow start near boundaries
+          Math.min((pos - loc)  / 2, (trackLimit - pos) * 3)
+          : Math.max((pos - loc)  / 2, (trackLimit + pos) * -3);
+
+      action = 10 / (80 * 0.01745) * angle + angleDot + posDot + move;
       //  if (angle > 0) {
       //      if (angle > 65 * 0.01745) {
       //          action = 10;
