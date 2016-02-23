@@ -104,7 +104,7 @@ class PoleServer_handler implements Runnable {
 
                   System.out.println("server < pole["+i+"]: "+angle+"  "
                       +angleDot+"  "+pos+"  "+posDot);
-                  actions[i] = calculate_action(angle, angleDot, pos, posDot);
+                  actions[i] = calculate_action(angle, angleDot, pos, posDot, 3);
                 }
 
                 sendMessage_doubleArray(actions);
@@ -152,9 +152,9 @@ class PoleServer_handler implements Runnable {
     // TODO: Current implementation assumes that each pole is controlled
     // independently. The interface needs to be changed if the control of one
     // pendulum needs sensing data from other pendulums.
-    double calculate_action(double angle, double angleDot, double pos, double posDot) {
+    double calculate_action(double angle, double angleDot, double pos, double posDot, double loc) {
       double action = 0;
-      action = 10 / (80 * 0.01745) * angle + angleDot + posDot;
+      action = 10 / (80 * 0.01745) * angle + angleDot + posDot + (pos-loc)/2;
       //  if (angle > 0) {
       //      if (angle > 65 * 0.01745) {
       //          action = 10;

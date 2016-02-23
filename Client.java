@@ -16,9 +16,9 @@ public class Client extends Applet {
     double threshold = 5;
     // The speed of simulation
     // (How many simulation second elapses when 1 second real time elapses)
-    double simSpeed = 0.1;
+    double simSpeed = 1;
     // Sensor sampling rate (per simulation second)
-    double sensorSamplingRate = 100;
+    double sensorSamplingRate = 1000;
     // advance of simulation time (in second) per step
     double tau_sim = 0.01;
     private static ObjectOutputStream out;
