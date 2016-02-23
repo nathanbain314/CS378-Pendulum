@@ -35,6 +35,8 @@ public class ControlServer {
 class PoleServer_handler implements Runnable {
     // Set the number of poles
     private static final int NUM_POLES = 2;
+    private static final double TRACK_LIMIT = 4.8;
+
 
     static ServerSocket providerSocket;
     Socket connection = null;
@@ -102,9 +104,13 @@ class PoleServer_handler implements Runnable {
                   pos = data[i*4+2];
                   posDot = data[i*4+3];
 
+                  double dest = 3;
+                  if (i == 0)
+                    dest = follow(i, data, true);
+
                   System.out.println("server < pole["+i+"]: "+angle+"  "
                       +angleDot+"  "+pos+"  "+posDot);
-                  actions[i] = calculate_action(angle, angleDot, pos, posDot, 3);
+                  actions[i] = calculate_action(angle, angleDot, pos, posDot, dest);
                 }
 
                 sendMessage_doubleArray(actions);
@@ -128,6 +134,38 @@ class PoleServer_handler implements Runnable {
         }
 
         System.out.println("Session closed. Waiting for new connection...");
+
+    }
+
+    double follow(int thisPole, double [] data, boolean goinRight) {
+
+      double cartWidth = 0.4;
+      double breakBuffer = 0.25 + cartWidth;
+      double pos = data[thisPole*4+2];
+      // default not to hit a wall
+      double minDelta = goinRight ? 10 - breakBuffer : -10 + breakBuffer;
+      //save cart i's position
+      for (int i = 0; i < NUM_POLES; i++){
+        // need two nummbers that are closest to less than
+        // or greater than pos-
+        double otherPos = data[i*4+2];
+        double delta = otherPos - pos;
+        int targetPole = -1;
+
+        if (goinRight && (delta > 0)) {
+          if (delta < minDelta) {
+            targetPole = i;
+            minDelta = delta;
+          }
+        } else if (!goinRight && (delta < 0)) {
+          if (delta > minDelta) {
+            targetPole = i;
+            minDelta = delta;
+          }
+        }
+      }
+      
+      return pos + minDelta + (goinRight ? -1 * breakBuffer : breakBuffer); 
 
     }
 
@@ -155,12 +193,11 @@ class PoleServer_handler implements Runnable {
     double calculate_action(double angle, double angleDot, double pos, double posDot, double dest) {
       double action = 0;
 
-      double trackLimit = 4.8;
-
+      
       double move = (pos - dest) > 0 ?
           // min / max add slow start near boundaries
-          Math.min((pos - dest)  / 2, (trackLimit - pos) * 3)
-          : Math.max((pos - dest)  / 2, (trackLimit + pos) * -3);
+          Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
+          : Math.max((pos - dest)  / 2, (TRACK_LIMIT + pos) * -3);
 
       action = 10 / (80 * 0.01745) * angle + angleDot + posDot + move;
       //  if (angle > 0) {
