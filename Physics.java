@@ -9,13 +9,13 @@ public class Physics implements Runnable {
     long startTime;         // simulation start time (physical time)
     // long totalTime;         // total simulation time elapsed (physical time)
     double simulationTime;  // simulation time
-    
+
     double tau_sim;
     int tau_phy_ms;
 
     public boolean pole_in_good_state = true;    // whether the poles are in good states
     Pendulum pendulums[];
-    
+
     // Set the number of poles
     public final int NUM_POLES = 2;
     // Set the initial position of the poles
@@ -61,7 +61,7 @@ public class Physics implements Runnable {
      * them and the value of action.
      */
     public void run() {
-        
+
 
         //Remember the starting time.
         startTime = System.currentTimeMillis();
@@ -78,7 +78,7 @@ public class Physics implements Runnable {
               }
             }
           }
-          
+
           // advance simulation time
           simulationTime += tau_sim;
 
@@ -94,7 +94,7 @@ public class Physics implements Runnable {
         // this.sendMessage("bye");
 
     }
-    
+
     /** Update the state of one pendulum
      *  Return whether the pendulum is in NORMAL state after the update
      */
@@ -119,28 +119,28 @@ public class Physics implements Runnable {
                 / p.totalMass)));
         p.update_posDDot(common - p.poleMassLength * p.get_angleDDot() * cosangle
                 / p.totalMass);
-  
+
         { // update status
             double x = 0.;
             x = p.get_pos();
             x += p.get_posDot() * this.tau_sim;
             p.update_pos(x);
-  
+
             x = p.get_posDot();
             x += p.get_posDDot() * this.tau_sim;
             p.update_posDot(x);
-  
+
             p.update_prevAngle(p.get_angle());
-  
+
             x = p.get_angle();
             x += p.get_angleDot() * this.tau_sim;
             p.update_angle(x);
-  
+
             x = p.get_angleDot();
             x += p.get_angleDDot() * this.tau_sim;
             p.update_angleDot(x);
         }
-  
+
          // If the pole has fallen down
          if (p.get_angle() * 180 / Math.PI > 90.0 || p.get_angle() * 180 / Math.PI < -90.0) {
              if (p.get_angle() > 0) {
@@ -150,25 +150,25 @@ public class Physics implements Runnable {
              }
              p.update_poleState(PoleState.FAILED);
          }
-  
+
          // If the pole has hit the right boundary
          if (p.get_pos() + p.cartWidth / 2 > trackLimit) {
              p.update_pos(trackLimit - p.cartWidth / 2);
              p.update_poleState(PoleState.FAILED);
          }
-  
+
          // If the pole has hit the left boundary
          if (p.get_pos() - p.cartWidth / 2 < -trackLimit) {
              p.update_pos(-trackLimit + p.cartWidth / 2);
              p.update_poleState(PoleState.FAILED);
          }
-  
+
          // Check if the pendulum collide with others
          for (int i = 0; i<pendulums.length; i++) {
            if (p == pendulums[i]) {
              continue;
            }
-           if (Math.abs(p.get_pos() - pendulums[i].get_pos()) 
+           if (Math.abs(p.get_pos() - pendulums[i].get_pos())
                < (p.cartWidth + pendulums[i].cartWidth)/2) {
               // collision detected
               p.update_poleState(PoleState.FAILED);

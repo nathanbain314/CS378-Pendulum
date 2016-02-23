@@ -104,13 +104,14 @@ class PoleServer_handler implements Runnable {
                   pos = data[i*4+2];
                   posDot = data[i*4+3];
 
-                  double dest = 3;
-                  if (i == 0)
-                    dest = follow(i, data, true);
+                  double dest = follow(i, data, true);
+                  if (i == NUM_POLES - 1)
+                    dest = 4;
 
                   System.out.println("server < pole["+i+"]: "+angle+"  "
                       +angleDot+"  "+pos+"  "+posDot);
                   actions[i] = calculate_action(angle, angleDot, pos, posDot, dest);
+
                 }
 
                 sendMessage_doubleArray(actions);
@@ -138,35 +139,23 @@ class PoleServer_handler implements Runnable {
     }
 
     double follow(int thisPole, double [] data, boolean goinRight) {
-
       double cartWidth = 0.4;
-      double breakBuffer = 0.25 + cartWidth;
+      double brakeBuffer = 0.05 + cartWidth;
       double pos = data[thisPole*4+2];
       // default not to hit a wall
-      double minDelta = goinRight ? 10 - breakBuffer : -10 + breakBuffer;
-      //save cart i's position
+      double minDelta = goinRight ? 10 - brakeBuffer : -10 + brakeBuffer;
+      // find nearest cart in movement direction
       for (int i = 0; i < NUM_POLES; i++){
-        // need two nummbers that are closest to less than
-        // or greater than pos-
         double otherPos = data[i*4+2];
         double delta = otherPos - pos;
-        int targetPole = -1;
 
-        if (goinRight && (delta > 0)) {
-          if (delta < minDelta) {
-            targetPole = i;
-            minDelta = delta;
-          }
-        } else if (!goinRight && (delta < 0)) {
-          if (delta > minDelta) {
-            targetPole = i;
-            minDelta = delta;
-          }
-        }
+        if (goinRight && (0 < delta) && (delta < minDelta))
+          minDelta = delta;
+        else if (!goinRight && (minDelta < delta) && (delta < 0))
+          minDelta = delta;
       }
-      
-      return pos + minDelta + (goinRight ? -1 * breakBuffer : breakBuffer); 
 
+      return pos + minDelta + brakeBuffer * (goinRight ? -1 : 1);
     }
 
     /**
@@ -191,59 +180,12 @@ class PoleServer_handler implements Runnable {
     // independently. The interface needs to be changed if the control of one
     // pendulum needs sensing data from other pendulums.
     double calculate_action(double angle, double angleDot, double pos, double posDot, double dest) {
-      double action = 0;
-
-      
       double move = (pos - dest) > 0 ?
           // min / max add slow start near boundaries
           Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
-          : Math.max((pos - dest)  / 2, (TRACK_LIMIT + pos) * -3);
+          : Math.max((pos - dest)  / 2, (pos - (-1 * TRACK_LIMIT)) * -3);
 
-      action = 10 / (80 * 0.01745) * angle + angleDot + posDot + move;
-      //  if (angle > 0) {
-      //      if (angle > 65 * 0.01745) {
-      //          action = 10;
-      //      } else if (angle > 60 * 0.01745) {
-      //          action = 8;
-      //      } else if (angle > 50 * 0.01745) {
-      //          action = 7.5;
-      //      } else if (angle > 30 * 0.01745) {
-      //          action = 4;
-      //      } else if (angle > 20 * 0.01745) {
-      //          action = 2;
-      //      } else if (angle > 10 * 0.01745) {
-      //          action = 0.5;
-      //      } else if(angle >5*0.01745){
-      //          action = 0.2;
-      //      } else if(angle >2*0.01745){
-      //          action = 0.1;
-      //      } else {
-      //          action = 0;
-      //      }
-      //  } else if (angle < 0) {
-      //      if (angle < -65 * 0.01745) {
-      //          action = -10;
-      //      } else if (angle < -60 * 0.01745) {
-      //          action = -8;
-      //      } else if (angle < -50 * 0.01745) {
-      //          action = -7.5;
-      //      } else if (angle < -30 * 0.01745) {
-      //          action = -4;
-      //      } else if (angle < -20 * 0.01745) {
-      //          action = -2;
-      //      } else if (angle < -10 * 0.01745) {
-      //          action = -0.5;
-      //      } else if(angle <-5*0.01745){
-      //          action = -0.2;
-      //      } else if(angle <-2*0.01745){
-      //          action = -0.1;
-      //      } else {
-      //          action = 0;
-      //      }
-      //  } else {
-      //      action = 0.;
-      //  }
-      return action;
+      return 10 / (80 * 0.01745) * angle + angleDot + posDot + move;
    }
 
     /**
