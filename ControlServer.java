@@ -37,6 +37,7 @@ class PoleServer_handler implements Runnable {
     private static final int NUM_POLES = 2;
     private static final double TRACK_LIMIT = 4.8;
 
+    public static double target = -4;
 
     static ServerSocket providerSocket;
     Socket connection = null;
@@ -104,9 +105,9 @@ class PoleServer_handler implements Runnable {
                   pos = data[i*4+2];
                   posDot = data[i*4+3];
 
-                  double dest = follow(i, data, true);
+                  double dest = follow(i, data, (data[i*4+2]<data[(NUM_POLES-1)*4+2]) ? 1 : -1);
                   if (i == NUM_POLES - 1)
-                    dest = 4;
+                    dest = target;
 
                   System.out.println("server < pole["+i+"]: "+angle+"  "
                       +angleDot+"  "+pos+"  "+posDot);
@@ -138,24 +139,22 @@ class PoleServer_handler implements Runnable {
 
     }
 
-    double follow(int thisPole, double [] data, boolean goinRight) {
+    double follow(int thisPole, double [] data, int direction) {
       double cartWidth = 0.4;
       double brakeBuffer = 0.05 + cartWidth;
       double pos = data[thisPole*4+2];
       // default not to hit a wall
-      double minDelta = goinRight ? 10 - brakeBuffer : -10 + brakeBuffer;
+      double minDelta = direction * (10 - brakeBuffer);
       // find nearest cart in movement direction
       for (int i = 0; i < NUM_POLES; i++){
         double otherPos = data[i*4+2];
         double delta = otherPos - pos;
 
-        if (goinRight && (0 < delta) && (delta < minDelta))
-          minDelta = delta;
-        else if (!goinRight && (minDelta < delta) && (delta < 0))
+        if ( (0 < delta * direction) && (delta < minDelta*direction) )
           minDelta = delta;
       }
 
-      return pos + minDelta + brakeBuffer * (goinRight ? -1 : 1);
+      return pos + minDelta - brakeBuffer * direction;
     }
 
     /**
@@ -183,9 +182,9 @@ class PoleServer_handler implements Runnable {
       double move = (pos - dest) > 0 ?
           // min / max add slow start near boundaries
           Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
-          : Math.max((pos - dest)  / 2, (pos - (-1 * TRACK_LIMIT)) * -3);
+          : Math.max((pos - dest)  / 2, (pos + TRACK_LIMIT) * -3);
 
-      return 10 / (80 * 0.01745) * angle + angleDot + posDot + move;
+      return angle / (8 * 0.01745) + angleDot + posDot + move;
    }
 
     /**
