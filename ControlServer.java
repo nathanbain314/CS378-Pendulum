@@ -37,7 +37,7 @@ class PoleServer_handler implements Runnable {
     private static final int NUM_POLES = 2;
     private static final double TRACK_LIMIT = 4.8;
 
-    public static double target = -4;
+    public static double target = 0;
 
     static ServerSocket providerSocket;
     Socket connection = null;
@@ -105,8 +105,8 @@ class PoleServer_handler implements Runnable {
                   pos = data[i*4+2];
                   posDot = data[i*4+3];
 
-                  double dest = follow(i, data, (data[i*4+2]<data[(NUM_POLES-1)*4+2]) ? 1 : -1);
-                  if (i == NUM_POLES - 1)
+                  double dest = follow(i, data, (data[i*4+2]<data[2]) ? 1 : -1);
+                  if (i == 0)
                     dest = target;
 
                   System.out.println("server < pole["+i+"]: "+angle+"  "
@@ -143,16 +143,22 @@ class PoleServer_handler implements Runnable {
       double cartWidth = 0.4;
       double brakeBuffer = 0.05 + cartWidth;
       double pos = data[thisPole*4+2];
+      double posDot = data[thisPole*4+3];
       // default not to hit a wall
       double minDelta = direction * (10 - brakeBuffer);
       // find nearest cart in movement direction
-      for (int i = 0; i < NUM_POLES; i++){
-        double otherPos = data[i*4+2];
-        double delta = otherPos - pos;
+      for (int i = NUM_POLES-1; i>=0; i--){
+        if ( i != thisPole )
+        {
+          double otherPos = data[i*4+2];
+          double otherPosDot = data[i*4+3];
+          double delta = otherPos - pos;
+          if( otherPosDot*posDot<0) delta += 2*otherPosDot;
 
-        if ( (0 < delta * direction) && (delta < minDelta*direction) )
-          minDelta = delta;
-      }
+          if ( (0 < delta * direction) && (delta < minDelta*direction) )
+            minDelta = delta;
+        }
+      } 
 
       return pos + minDelta - brakeBuffer * direction;
     }
