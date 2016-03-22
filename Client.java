@@ -77,7 +77,7 @@ public class Client extends Applet {
             out.flush();
             in = new ObjectInputStream(requestSocket.getInputStream());
         } catch (IOException e) {
-            System.out.println("Not able to bind to server"); 
+            System.out.println("Not able to bind to server");
         }
     }
 
@@ -98,7 +98,7 @@ public class Client extends Applet {
         sensorThread.start();
 
         if (actuatorThread == null) {
-            actuatorThread = new Thread(new Actuator(physics, in));
+            actuatorThread = new Thread(new Actuator(physics, in, sensorSamplingRate));
         }
         actuatorThread.start();
 

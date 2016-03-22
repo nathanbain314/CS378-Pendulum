@@ -2,26 +2,32 @@
 * This class simulates the behavior of Actuator. It receives the action value from the controller and sends it across to the process.
 */
 import java.io.*;
+import java.util.Arrays;
 
 class Actuator implements Runnable {
 
   Physics physics;
   private ObjectInputStream in;
+  double[] data;
+  double[] lastData;
+  double sensorSamplingRate;
 
-  Actuator(Physics phy, ObjectInputStream in) {
+  Actuator(Physics phy, ObjectInputStream in, double sensorSamplingRate) {
     this.physics = phy;
     this.in = in;
+    this.sensorSamplingRate = sensorSamplingRate;
+    data = new double[physics.NUM_POLES];
+    lastData = data;
   }
 
   void init() {
-    double init_actions[] = new double[physics.NUM_POLES];
+    data = new double[physics.NUM_POLES];
     for (int i = 0; i < physics.NUM_POLES; i++) {
-      init_actions[i] = 0;
+      data[i] = 0;
     }
-    physics.update_actions(init_actions);
+    physics.update_actions(data);
   }
 
-  double[] data;
 
   public synchronized void run() {
     Parachute parachute = new Parachute();
@@ -30,6 +36,9 @@ class Actuator implements Runnable {
       try {
         // read action data from control server
         Object obj = in.readObject();
+        for (int i = 0; i < physics.NUM_POLES; i++) {
+          lastData[i] = lastData[i] * 0.75 + data[i] * 0.25;
+        }
         data = (double[]) (obj);
         assert(data.length == physics.NUM_POLES);
         synchronized (parachute) {
@@ -62,19 +71,22 @@ class Actuator implements Runnable {
     public synchronized void run() {
       // wait until a sensor data packet should have arrived
       try {
-        Thread.sleep(100);
+        Thread.sleep((int)(sensorSamplingRate * 0.5));
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
       // if not, adjust actions
       synchronized (this) {
         if (!actionsUpdated) {
-          // simplest implementation: update actions to be 0
           // could create and send a fake update here
-          for (double d : data) {
-            d = 0;
+          double newData[] = new double[physics.NUM_POLES];
+          for (int i = 0; i < physics.NUM_POLES; i++) {
+            newData[i] = data[i] - lastData[i];
           }
-          physics.update_actions(data);
+          System.out.println("parachuting actions");
+          System.out.println("data: " + Arrays.toString(data));
+
+          physics.update_actions(newData);
         }
       }
     } // class Parachute
