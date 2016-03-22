@@ -34,7 +34,7 @@ public class ControlServer {
  */
 class PoleServer_handler implements Runnable {
     // Set the number of poles
-    private static final int NUM_POLES = 1;
+    private static final int NUM_POLES = 2;
     private static final double TRACK_LIMIT = 4.8;
 
     public static double target = 0;
@@ -184,13 +184,15 @@ class PoleServer_handler implements Runnable {
     // TODO: Current implementation assumes that each pole is controlled
     // independently. The interface needs to be changed if the control of one
     // pendulum needs sensing data from other pendulums.
-    double calculate_action(double angle, double angleDot, double pos, double posDot, double dest) {
-      double move = (pos - dest) > 0 ?
-          // min / max add slow start near boundaries
-          Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
-          : Math.max((pos - dest)  / 2, (pos + TRACK_LIMIT) * -3);
+    double calculate_action(double angle, double angleDot, double pos,
+                            double posDot, double dest) {
+      double move = dest;
+      // double move = (pos - dest) > 0 ?
+      //     // min / max add slow start near boundaries
+      //     Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
+      //     : Math.max((pos - dest)  / 2, (pos + TRACK_LIMIT) * -3);
 
-      return angle / (8 * 0.01745) + angleDot + posDot + move;
+      return 10 * angle + angleDot + posDot + move;
    }
 
     /**
