@@ -34,7 +34,7 @@ public class ControlServer {
  */
 class PoleServer_handler implements Runnable {
     // Set the number of poles
-    private static final int NUM_POLES = 2;
+    private static final int NUM_POLES = 1;
     private static final double TRACK_LIMIT = 4.8;
 
     public static double target = 0;
@@ -99,13 +99,14 @@ class PoleServer_handler implements Runnable {
                 // controlled independently. This part needs to be changed if
                 // the control of one pendulum needs sensing data from other
                 // pendulums.
+                double leaderPos = data[2];
                 for (int i = 0; i < NUM_POLES; i++) {
                   angle = data[i*4+0];
                   angleDot = data[i*4+1];
                   pos = data[i*4+2];
                   posDot = data[i*4+3];
 
-                  double dest = follow(i, data, (data[i*4+2]<data[2]) ? 1 : -1);
+                  double dest = follow(i, data, (pos < leaderPos) ? 1 : -1);
                   if (i == 0)
                     dest = target;
 
@@ -158,7 +159,7 @@ class PoleServer_handler implements Runnable {
           if ( (0 < delta * direction) && (delta < minDelta*direction) )
             minDelta = delta;
         }
-      } 
+      }
 
       return pos + minDelta - brakeBuffer * direction;
     }
@@ -190,7 +191,15 @@ class PoleServer_handler implements Runnable {
           Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
           : Math.max((pos - dest)  / 2, (pos + TRACK_LIMIT) * -3);
 
-      return angle / (8 * 0.01745) + angleDot + posDot + move;
+      // stabilize if the pendulum is rising
+      // need to simplify this logic
+      if (angle < 0 && posDot < 0)
+        action += Math.abs(angleDot) + Math.abs(posDot);
+      else if (angle > 0 && posDot > 0)
+        action -= Math.abs(angleDot) + Math.abs(posDot);
+
+
+      return 7.16 * angle + angleDot + posDot + move;
    }
 
     /**
