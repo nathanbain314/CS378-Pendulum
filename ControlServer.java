@@ -34,7 +34,7 @@ public class ControlServer {
  */
 class PoleServer_handler implements Runnable {
     // Set the number of poles
-    private static final int NUM_POLES = 2;
+    private static final int NUM_POLES = 1;
     private static final double TRACK_LIMIT = 4.8;
 
     public static double target = 0;
@@ -158,7 +158,7 @@ class PoleServer_handler implements Runnable {
           if ( (0 < delta * direction) && (delta < minDelta*direction) )
             minDelta = delta;
         }
-      } 
+      }
 
       return pos + minDelta - brakeBuffer * direction;
     }
