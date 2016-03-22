@@ -14,8 +14,8 @@ public class Pendulum {
     public double init_pos;   // initial position
     public double pos, posDot, angle, angleDot;
     public double prevAngle, angleDDot, posDDot;
-    public double action = 0.75;
-    
+    public double action = 0.75; // 0.0;
+
     public final double cartMass = 1.;
     public final double poleMass = 0.1;
     public final double poleLength = 1.;

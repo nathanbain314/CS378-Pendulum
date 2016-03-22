@@ -9,7 +9,9 @@ class Actuator implements Runnable {
   Physics physics;
   private ObjectInputStream in;
   double[] data;
+  double dataTimeStamp;
   double[] lastData;
+  double ladtDataTimeStamp;
   double sensorSamplingRate;
 
   Actuator(Physics phy, ObjectInputStream in, double sensorSamplingRate) {
@@ -18,12 +20,14 @@ class Actuator implements Runnable {
     this.sensorSamplingRate = sensorSamplingRate;
     data = new double[physics.NUM_POLES];
     lastData = data;
+
   }
 
   void init() {
     data = new double[physics.NUM_POLES];
     for (int i = 0; i < physics.NUM_POLES; i++) {
-      data[i] = 0;
+      data[i] = -0.75;
+      lastData[i] = data[i];
     }
     physics.update_actions(data);
   }
@@ -37,7 +41,7 @@ class Actuator implements Runnable {
         // read action data from control server
         Object obj = in.readObject();
         for (int i = 0; i < physics.NUM_POLES; i++) {
-          lastData[i] = lastData[i] * 0.75 + data[i] * 0.25;
+          lastData[i] = lastData[i] * 0.8 + data[i] * 0.2;
         }
         data = (double[]) (obj);
         assert(data.length == physics.NUM_POLES);
