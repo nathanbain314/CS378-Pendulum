@@ -81,7 +81,7 @@ class Actuator implements Runnable {
           // could create and send a fake update here
           double newData[] = new double[physics.NUM_POLES];
           for (int i = 0; i < physics.NUM_POLES; i++) {
-            newData[i] = data[i] - lastData[i];
+            newData[i] = 0;//data[i] - lastData[i];
           }
           System.out.println("parachuting actions");
           System.out.println("data: " + Arrays.toString(data));

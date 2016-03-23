@@ -34,7 +34,7 @@ public class ControlServer {
  */
 class PoleServer_handler implements Runnable {
     // Set the number of poles
-    private static final int NUM_POLES = 1;
+    private static final int NUM_POLES = 2;
     private static final double TRACK_LIMIT = 4.8;
 
     public static double target = 0;
@@ -78,6 +78,7 @@ class PoleServer_handler implements Runnable {
 
                 // read data from client
                 Object obj = in.readObject();
+                double latency = 400;
 
                 // Do not process string data unless it is "bye", in which case,
                 // we close the server
@@ -112,7 +113,8 @@ class PoleServer_handler implements Runnable {
 
                   System.out.println("server < pole["+i+"]: "+angle+"  "
                       +angleDot+"  "+pos+"  "+posDot);
-                  actions[i] = calculate_action(angle, angleDot, pos, posDot, dest);
+                  actions[i] = calculate_action(angle, angleDot, pos, posDot,
+                                                dest, latency);
 
                 }
 
@@ -185,18 +187,31 @@ class PoleServer_handler implements Runnable {
     // TODO: Current implementation assumes that each pole is controlled
     // independently. The interface needs to be changed if the control of one
     // pendulum needs sensing data from other pendulums.
-    double calculate_action(double angle, double angleDot, double pos, double posDot, double dest) {
+    double calculate_action(double angle, double angleDot, double pos,
+                            double posDot, double dest, double movingAvgRTT) {
+      angle += angleDot * movingAvgRTT / 6000;
+      pos += posDot * movingAvgRTT / 6000;
+
       double move = (pos - dest) > 0 ?
           // min / max add slow start near boundaries
-          Math.min((pos - dest)  / 2, (TRACK_LIMIT - pos) * 3)
-          : Math.max((pos - dest)  / 2, (pos + TRACK_LIMIT) * -3);
+          Math.min(2, (TRACK_LIMIT - pos) * 3)
+          : Math.max(-2, (pos + TRACK_LIMIT) * -3);
 
       // stabilize if the pendulum is rising
       // need to simplify this logic
       if (angle < 0 && posDot < 0)
-        action += Math.abs(angleDot) + Math.abs(posDot);
+        action += Math.abs(angleDot);
       else if (angle > 0 && posDot > 0)
-        action -= Math.abs(angleDot) + Math.abs(posDot);
+        action -= Math.abs(angleDot);
+
+      // resist running under the pendulum
+      if (Math.abs(angle) < 0.1 && angleDot * posDot < 0) {
+        if (angleDot < 0 && posDot > 0)
+          action *= 0.5;
+        else if (angleDot > 0 && posDot < 0)
+          action *= 0.5;
+      }
+
 
 
       return 7.16 * angle + angleDot + posDot + move;
