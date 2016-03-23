@@ -71,7 +71,7 @@ class Actuator implements Runnable {
     public synchronized void run() {
       // wait until a sensor data packet should have arrived
       try {
-        Thread.sleep((int)(100)); // should be ~1/3 of rtt
+        Thread.sleep((int)(110)); // 110 up to 180ms
       } catch (InterruptedException e) {
         e.printStackTrace();
       }

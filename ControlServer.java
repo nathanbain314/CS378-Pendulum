@@ -4,6 +4,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
+import java.text.DecimalFormat;
 
 public class ControlServer {
 
@@ -34,10 +35,10 @@ public class ControlServer {
  */
 class PoleServer_handler implements Runnable {
     // Set the number of poles
-    private static final int NUM_POLES = 2;
+    private static final int NUM_POLES = 1;
     private static final double TRACK_LIMIT = 4.8;
 
-    public static double target = 0;
+    public static double target = 3;
 
     static ServerSocket providerSocket;
     Socket connection = null;
@@ -73,6 +74,7 @@ class PoleServer_handler implements Runnable {
      */
     void control_pendulum(ObjectOutputStream out, ObjectInputStream in) {
         try {
+            DecimalFormat df = new DecimalFormat("#0.0000000");
             while(true){
                 System.out.println("-----------------");
 
@@ -84,7 +86,7 @@ class PoleServer_handler implements Runnable {
                 // we close the server
                 if(obj instanceof String){
                     System.out.println("STRING RECEIVED: "+(String) obj);
-                    if(obj.equals("bye")){
+                    if (obj.equals("bye")) {
                         break;
                     }
                     continue;
@@ -111,8 +113,13 @@ class PoleServer_handler implements Runnable {
                   if (i == 0)
                     dest = target;
 
-                  System.out.println("server < pole["+i+"]: "+angle+"  "
-                      +angleDot+"  "+pos+"  "+posDot);
+                  System.out.println(
+                      "server< pole[" + i + "]:" +
+                      String.format("%1$12s", df.format(angle)) +
+                      String.format("%1$12s", df.format(angleDot)) +
+                      String.format("%1$12s", df.format(pos)) +
+                      String.format("%1$12s", df.format(posDot))
+                  );
                   actions[i] = calculate_action(angle, angleDot, pos, posDot,
                                                 dest, latency);
 
@@ -189,32 +196,15 @@ class PoleServer_handler implements Runnable {
     // pendulum needs sensing data from other pendulums.
     double calculate_action(double angle, double angleDot, double pos,
                             double posDot, double dest, double movingAvgRTT) {
-      angle += angleDot * movingAvgRTT / 6000;
-      pos += posDot * movingAvgRTT / 6000;
+      double futureAngle = angle + angleDot * movingAvgRTT / 6000;
+      double futurePos = pos + posDot * movingAvgRTT / 6000;
 
-      double move = (pos - dest) > 0 ?
+      double move = (futurePos - dest) > 0 ?
           // min / max add slow start near boundaries
-          Math.min(2, (TRACK_LIMIT - pos) * 3)
-          : Math.max(-2, (pos + TRACK_LIMIT) * -3);
+          Math.min(1, Math.min(futurePos - dest,  (TRACK_LIMIT - futurePos) * 3))
+          : Math.max(-1, Math.max(futurePos - dest, (futurePos + TRACK_LIMIT) * -3));
 
-      // stabilize if the pendulum is rising
-      // need to simplify this logic
-      if (angle < 0 && posDot < 0)
-        action += Math.abs(angleDot);
-      else if (angle > 0 && posDot > 0)
-        action -= Math.abs(angleDot);
-
-      // resist running under the pendulum
-      if (Math.abs(angle) < 0.1 && angleDot * posDot < 0) {
-        if (angleDot < 0 && posDot > 0)
-          action *= 0.5;
-        else if (angleDot > 0 && posDot < 0)
-          action *= 0.5;
-      }
-
-
-
-      return 7.16 * angle + angleDot + posDot + move;
+      return  8 * futureAngle / (Math.PI / 2) + 1.5 * angleDot + posDot + move;
    }
 
     /**
@@ -239,9 +229,10 @@ class PoleServer_handler implements Runnable {
             out.writeObject(data);
             out.flush();
 
-            System.out.print("server> ");
+            DecimalFormat df = new DecimalFormat("#0.0000000");
+            System.out.print("server>");
             for(int i=0; i< data.length; i++){
-                System.out.print(data[i] + "  ");
+                System.out.print(String.format("%1$12s", df.format(data[i])));
             }
             System.out.println();
 

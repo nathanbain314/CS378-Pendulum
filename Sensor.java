@@ -2,6 +2,7 @@
  * This class simulates the behavior of Sensor. It sends angle and previous angle values to the controller to compute action.
  */
 import java.io.*;
+import java.text.DecimalFormat;
 
 enum TriggerType {
 
@@ -84,9 +85,10 @@ class Sensor implements Runnable {
             out.writeObject(data);
             out.flush();
 
-            System.out.print("client> ");
+            DecimalFormat df = new DecimalFormat("#0.0000000");
+            System.out.print("client>");
             for(int i=0; i< data.length; i++){
-                System.out.print(data[i] + "  ");
+                System.out.print(String.format("%1$12s", df.format(data[i])));
             }
             System.out.println();
 
