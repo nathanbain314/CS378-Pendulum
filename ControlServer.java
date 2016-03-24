@@ -38,7 +38,7 @@ class PoleServer_handler implements Runnable {
     private static final int NUM_POLES = 1;
     private static final double TRACK_LIMIT = 4.8;
 
-    public static double target = 2;
+    public static double target = 0;
 
     static ServerSocket providerSocket;
     Socket connection = null;
@@ -196,6 +196,7 @@ class PoleServer_handler implements Runnable {
     // pendulum needs sensing data from other pendulums.
     double calculate_action(double angle, double angleDot, double pos,
                             double posDot, double dest, double movingAvgRTT) {
+      // account for
       double futureAngle = angle + angleDot * movingAvgRTT / 6000;
       double futurePos = pos + posDot * movingAvgRTT / 6000;
 

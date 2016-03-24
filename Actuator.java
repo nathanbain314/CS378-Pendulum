@@ -36,27 +36,31 @@ class Actuator implements Runnable {
       try {
         // read action data from control server
         Object obj = in.readObject();
+        // add previous data to moving average
         for (int i = 0; i < physics.NUM_POLES; i++) {
           lastData[i] = lastData[i] * 0.8 + data[i] * 0.2;
         }
+        // extract new data from obj
         data = (double[]) (obj);
         assert(data.length == physics.NUM_POLES);
+        // stop the last parachute from canceling action
         synchronized (parachute) {
           parachute.update();
         }
 
         physics.update_actions(data);
-
+        // create a new parachute for this update
         parachute = new Parachute();
         parachuteThread = new Thread(parachute);
         parachuteThread.start();
       } catch (Exception e) {
         e.printStackTrace();
       }
-
     }
   }
 
+
+  // cancels an action after a period of time
   private class Parachute implements Runnable {
     boolean actionsUpdated;
 
@@ -83,8 +87,6 @@ class Actuator implements Runnable {
           for (int i = 0; i < physics.NUM_POLES; i++) {
             newData[i] = 0;//data[i] - lastData[i];
           }
-          System.out.println("parachuting actions");
-          System.out.println("data: " + Arrays.toString(data));
 
           physics.update_actions(newData);
         }
