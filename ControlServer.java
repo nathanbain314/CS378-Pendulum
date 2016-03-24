@@ -38,7 +38,7 @@ class PoleServer_handler implements Runnable {
     private static final int NUM_POLES = 1;
     private static final double TRACK_LIMIT = 4.8;
 
-    public static double target = 3;
+    public static double target = 2;
 
     static ServerSocket providerSocket;
     Socket connection = null;
@@ -201,8 +201,8 @@ class PoleServer_handler implements Runnable {
 
       double move = (futurePos - dest) > 0 ?
           // min / max add slow start near boundaries
-          Math.min(1, Math.min(futurePos - dest,  (TRACK_LIMIT - futurePos) * 3))
-          : Math.max(-1, Math.max(futurePos - dest, (futurePos + TRACK_LIMIT) * -3));
+          Math.min(1, Math.min(pos - dest,  (TRACK_LIMIT - pos) * 3))
+          : Math.max(-1, Math.max(pos - dest, (pos + TRACK_LIMIT) * -3));
 
       return  8 * futureAngle / (Math.PI / 2) + 1.5 * angleDot + posDot + move;
    }
