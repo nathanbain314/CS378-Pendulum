@@ -9,13 +9,13 @@ class Actuator implements Runnable {
   Physics physics;
   private ObjectInputStream in;
   double[] data;
-  double[] lastData;
+  //double[] lastData;
 
   Actuator(Physics phy, ObjectInputStream in) {
     this.physics = phy;
     this.in = in;
     data = new double[physics.NUM_POLES];
-    lastData = data;
+    //lastData = data;
 
   }
 
@@ -23,7 +23,7 @@ class Actuator implements Runnable {
     data = new double[physics.NUM_POLES];
     for (int i = 0; i < physics.NUM_POLES; i++) {
       data[i] = -0.75;
-      lastData[i] = data[i];
+      //lastData[i] = data[i];
     }
     physics.update_actions(data);
   }
@@ -37,9 +37,9 @@ class Actuator implements Runnable {
         // read action data from control server
         Object obj = in.readObject();
         // add previous data to moving average
-        for (int i = 0; i < physics.NUM_POLES; i++) {
-          lastData[i] = lastData[i] * 0.8 + data[i] * 0.2;
-        }
+        //for (int i = 0; i < physics.NUM_POLES; i++) {
+          //lastData[i] = lastData[i] * 0.8 + data[i] * 0.2;
+        //}
         // extract new data from obj
         data = (double[]) (obj);
         assert(data.length == physics.NUM_POLES);
